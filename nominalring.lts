@@ -1,0 +1,12 @@
+const N     = 2
+range Nodes = 0..N-1
+set   Value = {token}
+
+CHANNEL	  = (in[d:Nodes][x:Value] -> out[d][x] -> CHANNEL).
+NODE(I=0) = if (I==0) then LEADER else IDLE,
+LEADER    = (token -> IDLE | open -> close -> token -> IDLE),
+IDLE      = (token -> LEADER).
+
+|| NOMINALRING(N=N) = (node[i:Nodes]:NODE(i) || channel:CHANNEL) / {
+	node[i:Nodes].token / channel.in[i]
+}.
