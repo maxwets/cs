@@ -1,18 +1,32 @@
-const N     = 3
+const N     = 1
 range Nodes = 0..N-1
+set Values  = {token, claim[x:Nodes]}
 
 NODE(I=0) = IDLE,
 IDLE	   = ( recv.token -> LEADER
-			 | timeout -> send.claim[I] -> ELIGIBLE),
+			 | timeout -> send.claim[I] -> ELIGIBLE
+			 | recv.claim[j:Nodes] -> 
+					if (j<I) then (send.claim[j] -> IDLE)
+					else  IDLE),
 
 LEADER = ( send.token -> IDLE 
 		 | open -> close -> send.token -> IDLE),
 
-ELIGIBLE = ( timeout -> send.claim[I] -> ELIGIBLE),
+ELIGIBLE = ( timeout -> send.claim[I] -> ELIGIBLE
+		   | recv.token -> LEADER
+		   | recv.claim[j:Nodes] ->
+					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
+					else if (j==I) then LEADER
+					else ELIGIBLE),
 
-NOT_ELIGIBLE = ( recv.token -> LEADER).
+NOT_ELIGIBLE = ( recv.token -> LEADER
+			   | timeout -> send.claim[I] -> ELIGIBLE
+			   | recv.claim[j:Nodes] ->
+					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
+					else if (j>I) then NOT_ELIGIBLE
+					else IDLE).
 
 
-|| NOMINALRING(N=N) = (node[i:Nodes]:NODE(i)) / {
+|| ELECTIONRING(N=N) = (node[i:Nodes]:NODE(i))/ {
     node[i:Nodes].send/node[(i+1)%N].recv
 }.
