@@ -1,0 +1,18 @@
+const N     = 3
+range Nodes = 0..N-1
+
+NODE(I=0) = IDLE,
+IDLE	   = ( recv.token -> LEADER
+			 | timeout -> send.claim[I] -> ELIGIBLE),
+
+LEADER = ( send.token -> IDLE 
+		 | open -> close -> send.token -> IDLE),
+
+ELIGIBLE = ( timeout -> send.claim[I] -> ELIGIBLE),
+
+NOT_ELIGIBLE = ( recv.token -> LEADER).
+
+
+|| NOMINALRING(N=N) = (node[i:Nodes]:NODE(i)) / {
+    node[i:Nodes].send/node[(i+1)%N].recv
+}.
