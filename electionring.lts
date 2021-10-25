@@ -1,7 +1,6 @@
-const N     = 1
-range Nodes = 0..N-1
-set Values  = {token, claim[x:Nodes]}
-
+const N      = 2
+range Nodes  = 0..N-1
+/*
 NODE(I=0) = IDLE,
 IDLE	   = ( recv.token -> LEADER
 			 | timeout -> send.claim[I] -> ELIGIBLE
@@ -12,12 +11,12 @@ IDLE	   = ( recv.token -> LEADER
 LEADER = ( send.token -> IDLE 
 		 | open -> close -> send.token -> IDLE),
 
-ELIGIBLE = ( timeout -> send.claim[I] -> ELIGIBLE
-		   | recv.token -> LEADER
+ELIGIBLE = ( recv.token -> LEADER
+		   | timeout -> send.claim[I] -> ELIGIBLE
 		   | recv.claim[j:Nodes] ->
 					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
-					else if (j==I) then LEADER
-					else ELIGIBLE),
+					else if (j>I) then ELIGIBLE
+					else LEADER),
 
 NOT_ELIGIBLE = ( recv.token -> LEADER
 			   | timeout -> send.claim[I] -> ELIGIBLE
@@ -27,6 +26,37 @@ NOT_ELIGIBLE = ( recv.token -> LEADER
 					else IDLE).
 
 
-|| ELECTIONRING(N=N) = (node[i:Nodes]:NODE(i))/ {
-    node[i:Nodes].send/node[(i+1)%N].recv
+|| ELECTIONRING(N=N) = (node[i:Nodes]:NODE(i)) / {
+	node[i:Nodes].send / node[(i+1)%N].recv
+}.
+*/
+
+
+NODE(I=0) = IDLE,
+IDLE	   = ( recv.token -> LEADER
+			 | send.claim[I] -> ELIGIBLE
+			 | recv.claim[j:Nodes] -> 
+					if (j<I) then (send.claim[j] -> IDLE)
+					else  IDLE),
+
+
+ELIGIBLE = ( recv.token -> LEADER
+		   | send.claim[I] -> ELIGIBLE
+		   | recv.claim[j:Nodes] ->
+					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
+					else if (j>I) then ELIGIBLE
+					else LEADER),
+
+NOT_ELIGIBLE = ( recv.token -> LEADER
+			   | send.claim[I] -> ELIGIBLE
+			   | recv.claim[j:Nodes] ->
+					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
+					else if (j>I) then NOT_ELIGIBLE
+					else IDLE),
+
+LEADER = ( send.token -> IDLE 
+		 | open -> close -> send.token -> IDLE).
+
+|| ELECTIONRING(N=N) = (node[i:Nodes]:NODE(i)) / {
+	node[i:Nodes].send / node[(i+1)%N].recv
 }.
