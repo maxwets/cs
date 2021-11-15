@@ -1,35 +1,7 @@
-const N      = 2
-range Nodes  = 0..N-1
-/*
-NODE(I=0) = IDLE,
-IDLE	   = ( recv.token -> LEADER
-			 | timeout -> send.claim[I] -> ELIGIBLE
-			 | recv.claim[j:Nodes] -> 
-					if (j<I) then (send.claim[j] -> IDLE)
-					else  IDLE),
+const N = 2
+range Nodes = 0..N-1
 
-LEADER = ( send.token -> IDLE 
-		 | open -> close -> send.token -> IDLE),
-
-ELIGIBLE = ( recv.token -> LEADER
-		   | timeout -> send.claim[I] -> ELIGIBLE
-		   | recv.claim[j:Nodes] ->
-					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
-					else if (j>I) then ELIGIBLE
-					else LEADER),
-
-NOT_ELIGIBLE = ( recv.token -> LEADER
-			   | timeout -> send.claim[I] -> ELIGIBLE
-			   | recv.claim[j:Nodes] ->
-					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
-					else if (j>I) then NOT_ELIGIBLE
-					else IDLE).
-
-
-|| ELECTIONRING(N=N) = (node[i:Nodes]:NODE(i)) / {
-	node[i:Nodes].send / node[(i+1)%N].recv
-}.
-*/
+set Messages = {token, claim[Nodes]}
 
 
 NODE(I=0) = IDLE,
@@ -39,24 +11,21 @@ IDLE	   = ( recv.token -> LEADER
 					if (j<I) then (send.claim[j] -> IDLE)
 					else  IDLE),
 
-
 ELIGIBLE = ( recv.token -> LEADER
 		   | send.claim[I] -> ELIGIBLE
 		   | recv.claim[j:Nodes] ->
-					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
+					if (j<I) then (send.claim[j] -> IDLE)
 					else if (j>I) then ELIGIBLE
 					else LEADER),
 
-NOT_ELIGIBLE = ( recv.token -> LEADER
-			   | send.claim[I] -> ELIGIBLE
-			   | recv.claim[j:Nodes] ->
-					if (j<I) then (send.claim[j] -> NOT_ELIGIBLE)
-					else if (j>I) then NOT_ELIGIBLE
-					else IDLE),
-
 LEADER = ( send.token -> IDLE 
-		 | open -> close -> send.token -> IDLE).
+		 | open -> close -> send.token -> IDLE) + { send.claim[Nodes] }.
 
-|| ELECTIONRING(N=N) = (node[i:Nodes]:NODE(i)) / {
-	node[i:Nodes].send / node[(i+1)%N].recv
+CHANNEL	= (in[m:Messages] -> out[m] -> CHANNEL).
+
+|| ELECTIONSERVICE = (node[i:Nodes]:NODE(i) || channel[i:Nodes]:CHANNEL) /  {
+	node[i:Nodes].send/channel[i].in,
+	node[i:Nodes].recv/channel[(i+1)%N].out
+} @ { 
+	node[Nodes].{open,close} 
 }.
