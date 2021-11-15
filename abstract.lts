@@ -14,13 +14,13 @@ ELIGIBLE = 	( recv.token -> LEADER
 								 else ELIGIBLE
 			| send.claim[I] -> ELIGIBLE) + {send.claim[Nodes]}.
 
-CHANNEL = (sent.token -> recvd.token -> CHANNEL | sent.claim.[a:Nodes] -> recvd.claim[a] -> CHANNEL).
+CHANNEL = (send.token -> recv.token -> CHANNEL | send.claim.[a:Nodes] -> recv.claim[a] -> CHANNEL).
 
 || ELECTIONRING = ([a:Nodes]:NOMINALRING(a) || [b:Nodes]:CHANNEL ) / {
-	[b:Nodes].send.token/[b].sent.token,
-	[b:Nodes].recv.token/[(b+N-1)%N].recvd.token,
-	[b:Nodes].send.claim[a:Nodes]/[b].sent.claim[a],
-	[b:Nodes].recv.claim[a:Nodes]/[(b+N-1)%N].recvd.claim[a]
+	[b:Nodes].send.token/[b].send.token,
+	[b:Nodes].recv.token/[(b+N-1)%N].recv.token,
+	[b:Nodes].send.claim[a:Nodes]/[b].send.claim[a],
+	[b:Nodes].recv.claim[a:Nodes]/[(b+N-1)%N].recv.claim[a]
 }.
 
 || ELECTIONSERVICE = ELECTIONRING @ {[Nodes].open, [Nodes].close}.
