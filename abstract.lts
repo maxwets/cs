@@ -1,7 +1,6 @@
 const N = 3
 range Nodes= 0..(N-1)
 
-
 NOMINALRING(I=N) = IDLE,
 LEADER = ( open -> close -> send.token -> IDLE
 		 | send.token -> IDLE),
@@ -10,7 +9,7 @@ IDLE = 	( recv.token -> LEADER
 							 	 else IDLE
 		| send.claim[I] -> ELIGIBLE),
 ELIGIBLE = 	( recv.token -> LEADER
-			| recv.claim[b:Nodes] -> if (I == a) then LEADER
+			| recv.claim[a:Nodes] -> if (I == a) then LEADER
 								 else if (a < I) then (send.claim[a] -> IDLE)
 								 else ELIGIBLE
 			| send.claim[I] -> ELIGIBLE) + {send.claim[Nodes]}.
@@ -19,9 +18,9 @@ CHANNEL = (sent.token -> recvd.token -> CHANNEL | sent.claim.[a:Nodes] -> recvd.
 
 || ELECTIONRING = ([a:Nodes]:NOMINALRING(a) || [b:Nodes]:CHANNEL ) / {
 	[b:Nodes].send.token/[b].sent.token,
-	[b:Nodes].recv.token/[(b+N-1)%N].recvd.token
+	[b:Nodes].recv.token/[(b+N-1)%N].recvd.token,
 	[b:Nodes].send.claim[a:Nodes]/[b].sent.claim[a],
-	[b:Nodes].recv.claim[a:Nodes]/[(b+N-1)%N].recvd.claim[a],
+	[b:Nodes].recv.claim[a:Nodes]/[(b+N-1)%N].recvd.claim[a]
 }.
 
 || ELECTIONSERVICE = ELECTIONRING @ {[Nodes].open, [Nodes].close}.
