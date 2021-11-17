@@ -5,11 +5,11 @@ range Nodes = 0..(N-1)
  * NOMINALRING
  */
 NODE(I=0) = LEADER[I],
-LEADER[a:Nodes] = ( [a].open -> [a].close -> [a].send.token -> IDLE[(a+1)%N]
-				  | [a].send.token -> IDLE[(a+1)%N]),
-IDLE[a:Nodes] =   ( [a].recv.token -> LEADER[a]).
+LEADER[i:Nodes] = ( [i].open -> [i].close -> [i].send.token -> IDLE[(i+1)%N]
+				  | [i].send.token -> IDLE[(i+1)%N]),
+IDLE[i:Nodes] =   ( [i].recv.token -> LEADER[i]).
 
-property OPENCLOSE = ([a:Nodes]open -> [a].close -> OPENCLOSE).
+property OPENCLOSE = ([i:Nodes]open -> [i].close -> OPENCLOSE).
 
 || NOMINALRING = (NOMINALNODE || OPENCLOSE).
 
@@ -17,20 +17,22 @@ property OPENCLOSE = ([a:Nodes]open -> [a].close -> OPENCLOSE).
  * ELECTIONRING
  */
 NODE(I=N) = IDLE,
-LEADER = (open -> close -> send.token -> IDLE
-		 		| send.token -> IDLE),
-IDLE = (recv.token -> LEADER
-					| recv.claim[b:Nodes] -> 	if (b < I) then (send.claim[b] -> IDLE)
-										else IDLE
-					| send.claim[I] -> ELIGIBLE
-					),
+LEADER = ( open -> close -> send.token -> IDLE
+		 | send.token -> IDLE),
+IDLE = ( recv.token -> LEADER
+	   | recv.claim[i:Nodes] ->
+	   		if (i < I) then (send.claim[i] -> IDLE)
+	   		else IDLE
+	   | send.claim[I] -> ELIGIBLE),
 ELIGIBLE = ( recv.token -> LEADER
-		   | recv.claim[b:Nodes] ->  if (I == b) then LEADER
-							   else if (b < I) then (send.claim[b] -> IDLE)
-							   else ELIGIBLE
-		   | send.claim[I] -> ELIGIBLE) + {send.claim[Nodes]}.
+		   | recv.claim[i:Nodes] -> 
+		   		if (i == I) then LEADER
+				else if (i < I) then (send.claim[i] -> IDLE)
+				else ELIGIBLE
+		   | send.claim[I] -> ELIGIBLE) 
++ {send.claim[Nodes]}.
 
-CHANNEL = (send.token -> recv.token -> CHANNEL | send.claim.[a:Nodes] -> recv.claim[a] -> CHANNEL).
+CHANNEL = (token_sent -> token_received -> CHANNEL | claim_sent[i:Nodes] -> claim_received[i] -> CHANNEL).
 
 || ELECTIONRING = ([a:Nodes]:NODE(a) || [b:Nodes]:CHANNEL || OPENCLOSE ) / {
 	[b:Nodes].send.token / [b].tokensnd,
@@ -39,4 +41,4 @@ CHANNEL = (send.token -> recv.token -> CHANNEL | send.claim.[a:Nodes] -> recv.cl
 	[b:Nodes].recv.claim[a:Nodes] / [(b+N-1)%N].claimrcvd[a]
 }.
 
-property OPENCLOSE = ([b:Nodes].open -> [b].close -> OPENCLOSE).
+property OPENCLOSE = ([i:Nodes].open -> [i].close -> OPENCLOSE).

@@ -8,14 +8,14 @@ NODE(I=0) = IDLE,
 IDLE	   = ( recv.token -> LEADER
 			 | send.claim[I] -> ELIGIBLE
 			 | recv.claim[j:Nodes] -> 
-					if (j<I) then (send.claim[j] -> IDLE)
+					if (j < I) then (send.claim[j] -> IDLE)
 					else  IDLE),
 
 ELIGIBLE = ( recv.token -> LEADER
 		   | send.claim[I] -> ELIGIBLE
 		   | recv.claim[j:Nodes] ->
-					if (j<I) then (send.claim[j] -> IDLE)
-					else if (j>I) then ELIGIBLE
+					if (j < I) then (send.claim[j] -> IDLE)
+					else if (j > I) then ELIGIBLE
 					else LEADER),
 
 LEADER = ( send.token -> IDLE 
