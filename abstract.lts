@@ -1,26 +1,30 @@
 const N = 3
 range Nodes= 0..N-1
 
-NOMINALRING(I=N) = IDLE,
-LEADER = ( open -> close -> send.token -> IDLE
-		 | send.token -> IDLE),
-IDLE = 	( recv.token -> LEADER
-		| recv.claim[a:Nodes] -> if (a < I) then (send.claim[a] -> IDLE)
-							 	 else IDLE
-		| send.claim[I] -> ELIGIBLE),
-ELIGIBLE = 	( recv.token -> LEADER
-			| recv.claim[a:Nodes] -> if (I == a) then LEADER
-								 else if (a < I) then (send.claim[a] -> IDLE)
-								 else ELIGIBLE
-			| send.claim[I] -> ELIGIBLE) + {send.claim[Nodes]}.
+NODE(I=N) = IDLE,
+LEADER    = ( open -> close -> send.token -> IDLE
+			| send.token -> IDLE),
+IDLE 	  = ( recv.token -> LEADER
+	   		| recv.claim[i:Nodes] ->
+				if (i < I) then (send.claim[i] -> IDLE)
+				else IDLE
+	   		| send.claim[I] -> ELIGIBLE),
+ELIGIBLE  = ( recv.token -> LEADER
+		   	| recv.claim[i:Nodes] ->
+		   		if (i == I) then LEADER
+				else if (i < I) then (send.claim[i] -> IDLE)
+				else ELIGIBLE
+		   | send.claim[I] -> ELIGIBLE)
++ {send.claim[Nodes]}.
 
-CHANNEL = (send.token -> recv.token -> CHANNEL | send.claim.[a:Nodes] -> recv.claim[a] -> CHANNEL).
+
+CHANNEL = (token_sent -> token_received -> CHANNEL | claim_sent[i:Nodes] -> claim_received[i] -> CHANNEL).
 
 || ELECTIONRING = ([a:Nodes]:NOMINALRING(a) || [b:Nodes]:CHANNEL ) / {
-	[b:Nodes].send.token/[b].send.token,
-	[b:Nodes].recv.token/[(b+N-1)%N].recv.token,
-	[b:Nodes].send.claim[a:Nodes]/[b].send.claim[a],
-	[b:Nodes].recv.claim[a:Nodes]/[(b+N-1)%N].recv.claim[a]
+	[b:Nodes].send.claim[a:Nodes]/[b].claim_sent[a],
+	[b:Nodes].recv.claim[a:Nodes]/[(b+N-1)%N].claim_received[a],
+	[b:Nodes].send.token/[b].token_sent,
+	[b:Nodes].recv.token/[(b+N-1)%N].token_received
 }.
 
 || ELECTIONSERVICE = ELECTIONRING @ {[Nodes].open, [Nodes].close}.
