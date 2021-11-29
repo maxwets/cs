@@ -1,9 +1,10 @@
 const N = 2
-range Nodes = 0..(N-1)
+range Nodes = 0..N-1
 
 NODE(I=N) = IDLE,
 LEADER    = ( open -> close -> send.token -> IDLE
-			| send.token -> IDLE),
+			| send.token -> IDLE
+			| open -> close -> LEADER),
 IDLE 	  = ( recv.token -> LEADER
 	   		| recv.claim[i:Nodes] ->
 				if (i < I) then (send.claim[i] -> IDLE)
@@ -30,15 +31,3 @@ CHANNEL = (token.sent -> token.received -> CHANNEL | claim.sent[i:Nodes] -> clai
 	[j:Nodes].send.token/[j].token.sent,
 	[j:Nodes].recv.token/[(j+N-1)%N].token.received
 }.
-
-fluent CRITICAL[i:Nodes] = <{[i].open}, {[i].close}>
-assert MUTEX = forall[i:Nodes] forall[j:Nodes] (rigid(i != j) -> []!(CRITICAL[i] && CRITICAL[j]))
-
-fluent FIRSTCLAIM[i:Nodes] = <[i].send.claim[i], [i].recv.claim[i]>
-assert NODUPCLAIM = forall[i:Nodes] (FIRSTCLAIM[i] -> X (!FIRSTCLAIM[i]))
-assert NODUP_MUTEX = (NODUPCLAIM -> MUTEX)
-
-assert ALLFAIR = [] <> [Nodes].open
-assert NOCRASH = [] (! [Nodes].crash)
-assert FAIR = [] <> [Nodes].open
-assert NOCRASH_FAIR = (NOCRASH -> FAIR)
