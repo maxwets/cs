@@ -1,4 +1,4 @@
-const N = 3
+const N = 2
 range Nodes = 0..(N-1)
 
 NODE(I=N) = IDLE,
@@ -24,21 +24,21 @@ CRASHED   = ( idle -> CRASHED
 
 CHANNEL = (token.sent -> token.received -> CHANNEL | claim.sent[i:Nodes] -> claim.received[i] -> CHANNEL).
 
-|| CRASHRING = ([a:Nodes]:NODE(a) || [b:Nodes]:CHANNEL) / {
-	[b:Nodes].send.claim[a:Nodes]/[b].claimsnd[a],
-	[b:Nodes].recv.claim[a:Nodes]/[(b+N-1)%N].claimrcvd[a],
-	[b:Nodes].send.token/[b].tokensnd,
-	[b:Nodes].recv.token/[(b+N-1)%N].tokenrcvd
+|| CRASHRING = ([i:Nodes]:NODE(i) || [j:Nodes]:CHANNEL) / {
+	[j:Nodes].send.claim[i:Nodes]/[j].claim.sent[i],
+	[j:Nodes].recv.claim[i:Nodes]/[(j+N-1)%N].claim.received[i],
+	[j:Nodes].send.token/[j].token.sent,
+	[j:Nodes].recv.token/[(j+N-1)%N].token.received
 }.
 
-fluent CRITICAL[a:Nodes] = <{[a].open}, {[a].close}>
-assert MUTEX = forall[a:Nodes] forall[b:Nodes] (rigid(a!=b) -> []!(CRITICAL[a] && CRITICAL[b] ))
+fluent CRITICAL[i:Nodes] = <{[i].open}, {[i].close}>
+assert MUTEX = forall[i:Nodes] forall[j:Nodes] (rigid(i != j) -> []!(CRITICAL[i] && CRITICAL[j]))
+
 fluent FIRSTCLAIM[i:Nodes] = <[i].send.claim[i], [i].recv.claim[i]>
-assert NODUPCLAIM = forall[a:Nodes] (FIRSTCLAIM[a] -> X (! FIRSTCLAIM[a]))
+assert NODUPCLAIM = forall[i:Nodes] (FIRSTCLAIM[i] -> X (!FIRSTCLAIM[i]))
 assert NODUP_MUTEX = (NODUPCLAIM -> MUTEX)
 
 assert ALLFAIR = [] <> [Nodes].open
-
 assert NOCRASH = [] (! [Nodes].crash)
 assert FAIR = [] <> [Nodes].open
 assert NOCRASH_FAIR = (NOCRASH -> FAIR)

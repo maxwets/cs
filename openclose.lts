@@ -21,9 +21,9 @@ CHANNEL = (token.sent -> token.received -> CHANNEL | claim.sent[i:Nodes] -> clai
 
 property OPENCLOSE = ([i:Nodes].open -> [i].close -> OPENCLOSE).
 
-|| ELECTIONRING = ([a:Nodes]:NODE(a) || [b:Nodes]:CHANNEL || OPENCLOSE ) / {
-	[b:Nodes].send.token / [b].token.sent,
-	[b:Nodes].recv.token / [(b+N-1)%N].token.received,
-	[b:Nodes].send.claim[a:Nodes] / [b].claim.sent[a],
-	[b:Nodes].recv.claim[a:Nodes] / [(b+N-1)%N].claim.received[a]
+|| ELECTIONRING = ([i:Nodes]:NODE(i) || [j:Nodes]:CHANNEL) / {
+	[j:Nodes].send.claim[i:Nodes]/[j].claim.sent[i],
+	[j:Nodes].recv.claim[i:Nodes]/[(j+N-1)%N].claim.received[i],
+	[j:Nodes].send.token/[j].token.sent,
+	[j:Nodes].recv.token/[(j+N-1)%N].token.received
 }.
